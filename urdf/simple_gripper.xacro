@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+<robot name="simple_griper" xmlns:xacro="http://wiki.ros.org/xacro">
+    
+    <xacro:property name="M_PI" value="3.1415926535897931" />
+
+    <xacro:macro name="simple_griper" params="prefix parent *origin ">
+
+        <joint name="${prefix}_base_joint" type="fixed">
+            <insert_block name="origin"/>
+            <parent link="${parent}" />
+            <child link="simple_gripper_base_link" />
+        </joint>
+
+        <link name="simple_gripper_base_link">
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0.005 0.05" />
+                <geometry>
+                    <box size="0.02 0.11 .10" />
+                </geometry>
+                <material name="silver">
+                    <color rgba="0.75 0.75 0.75 1" />
+                </material>
+                <material name="Blue" />
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0.05" />
+                <geometry>
+                    <cylinder length="0.0001" radius="0.00001" />
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.1" />
+                <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+            </inertial>
+        </link>
+
+        <gazebo reference="simple_gripper_base_link">
+            <material>Gazebo/White</material>
+            <turnGravityOff>false</turnGravityOff>
+        </gazebo>
+
+        <joint name="finger_joint1" type="prismatic">
+            <axis xyz="0 1 0" />
+            <limit effort="20" lower="-0.02" upper="0.027" velocity="0.2" />
+            <parent link="simple_gripper_base_link" />
+            <child link="finger_link1" />
+            <origin rpy="0 0 0" xyz="0 -0.025 0.1" />
+        </joint>
+
+        <link name="finger_link1">
+            <visual>
+                <geometry>
+                    <box size="0.01 0.01 .05" />
+                </geometry>
+                <material name="silver">
+                    <color rgba="0.75 0.75 0.75 1" />
+                </material>
+                <origin rpy="0 0 0" xyz="0.005 0.005 0.025 " />
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.01 0.01 .05" />
+                </geometry>
+                <origin rpy="0 0 0" xyz="0.005 0.005 0.025" />
+            </collision>
+            <inertial>
+                <mass value="0.1" />
+                <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+            </inertial>
+        </link>
+
+        <gazebo reference="finger_link1">
+            <material>Gazebo/White</material>
+            <turnGravityOff>false</turnGravityOff>
+        </gazebo>
+
+        <joint name="finger_joint2" type="prismatic">
+            <axis xyz="0 1 0" />
+            <limit effort="20" lower="-0.027" upper="0.02" velocity="0.2" />
+            <parent link="simple_gripper_base_link" />
+            <child link="finger_link2" />
+            <origin rpy="0 0 0" xyz="0 0.025 0.1" />
+        </joint>    
+
+        <link name="finger_link2">
+            <visual>
+                <geometry>
+                    <box size="0.01 0.01 .05" />
+                </geometry>
+                <material name="silver">
+                    <color rgba="0.75 0.75 0.75 1" />
+                </material>
+                <origin rpy="0 0 0" xyz="0.005 0.005 0.025 " />
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="0.01 0.01 .05" />
+                </geometry>
+                <origin rpy="0 0 0" xyz="0.005 0.005 0.025 " />
+            </collision>
+            <inertial>
+                <mass value="0.1" />
+                <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+            </inertial>
+        </link>
+
+        <gazebo reference="finger_link2">
+            <material>Gazebo/White</material>
+            <turnGravityOff>false</turnGravityOff>
+        </gazebo>
+
+        <transmission name="trans_finger_joint1">
+            <type>transmission_interface/SimpleTransmission</type>
+            <joint name="finger_joint1">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+            <actuator name="finger_joint1_motor">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+                <mechanicalReduction>1</mechanicalReduction>
+            </actuator>
+        </transmission>
+
+        <gazebo>
+            <plugin name="mimic_joint_plugin" filename="libroboticsgroup_upatras_gazebo_mimic_joint_plugin.so">
+                <joint>finger_joint1</joint>
+                <mimicJoint>finger_joint2</mimicJoint>
+                <xacro:if value="false">                    
+                    <hasPID />
+                </xacro:if>
+                <multiplier>-1</multiplier>
+                <offset>0</offset>
+                <sensitiveness>0</sensitiveness>   
+                <maxEffort>20</maxEffort>              
+                <!-- <xacro:unless value="${robot_namespace == ''}">
+                    <robotNamespace>($robot_namespace)</robotNamespace>
+                </xacro:unless> -->
+            </plugin>
+        </gazebo>
+
+        <gazebo>
+            <plugin name="gazebo_grasp_fix" filename="libgazebo_grasp_fix.so">
+                <arm>
+                  <arm_name>arm</arm_name>
+                  <palm_link>robot_arm_wrist_3_link</palm_link>
+                  <gripper_link>finger_link1</gripper_link>
+                  <gripper_link>finger_link2</gripper_link>
+                </arm>
+                <forces_angle_tolerance>100</forces_angle_tolerance>
+                <update_rate>4</update_rate>
+                <grip_count_threshold>4</grip_count_threshold>
+                <max_grip_count>8</max_grip_count>
+                <release_tolerance>0.005</release_tolerance>
+                <disable_collisions_on_attach>false</disable_collisions_on_attach>
+                <contact_topic>__default_topic__</contact_topic>
+            </plugin>
+        </gazebo>
+
+    </xacro:macro>
+
+</robot>
